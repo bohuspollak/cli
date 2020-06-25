@@ -33,7 +33,7 @@ def upload(url: urllib.parse.ParseResult, local_files: List[Path]) -> Iterable[T
     """
     Upload the *local_files* to the bucket and optional prefix specified by *url*.
     """
-    bucket, prefix = split_url(url)
+    bucket, prefix = split_s3_url(url)
 
     # Create a set of (local name, remote name) tuples.  S3 is a key-value
     # store, not a filesystem, so this remote name prefixing is intentionally a
@@ -60,7 +60,7 @@ def download(url: urllib.parse.ParseResult, local_path: Path, recursively: bool 
     Download the files deployed at the given remote *url*, optionally
     *recursively*, saving them into the *local_dir*.
     """
-    bucket, path = split_url(url)
+    bucket, path = split_s3_url(url)
 
     # Download either all objects sharing a prefix or the sole object (if any)
     # with the given key.
@@ -100,7 +100,7 @@ def ls(url: urllib.parse.ParseResult) -> Iterable[Path]:
     """
     List the files deployed at the given remote *url*.
     """
-    bucket, prefix = split_url(url)
+    bucket, prefix = split_s3_url(url)
 
     return [ Path(obj.key) for obj in bucket.objects.filter(Prefix = prefix) ]
 
@@ -109,7 +109,7 @@ def delete(url: urllib.parse.ParseResult, recursively: bool = False) -> Iterable
     """
     Delete the files deployed at the given remote *url*, optionally *recursively*.
     """
-    bucket, path = split_url(url)
+    bucket, path = split_s3_url(url)
 
     # Prevent unintentionally deleting everything recursively.  It also makes
     # sense for non-recursive deletion, since we don't support deleting the
@@ -136,7 +136,7 @@ def delete(url: urllib.parse.ParseResult, recursively: bool = False) -> Iterable
         purge_cloudfront(bucket, [ obj.key for obj in objects ])
 
 
-def split_url(url: urllib.parse.ParseResult) -> Tuple[S3Bucket, str]:
+def split_s3_url(url: urllib.parse.ParseResult) -> Tuple[S3Bucket, str]:
     """
     Splits the given s3:// *url* into a Bucket object and normalized path
     with some sanity checking.
