@@ -1,10 +1,14 @@
 """
 Downloads pathogen JSON data files or Markdown narratives from a remote
 source.
- 
+
 Source URLs specify the file(s) to download:
 
     nextstrain remote download s3://my-bucket/some/prefix/data.json
+
+or
+
+    nextstrain remote download nextstrain.org/groups/blab/data.json
 
 will download "data.json" into the current directory.
 
@@ -19,12 +23,13 @@ See `nextstrain remote --help` for more information on remote sources.
 
 from pathlib import Path
 from urllib.parse import urlparse
-from ...remote import s3
+from ...remote import s3, nextstrain
 from ...util import warn
 
 
 SUPPORTED_SCHEMES = {
     "s3": s3,
+    "": nextstrain,
 }
 
 
@@ -34,7 +39,7 @@ def register_parser(subparser):
     parser.add_argument(
         "remote_path",
         help    = "Remote file path as a URL",
-        metavar = "<s3://bucket-name>")
+        metavar = "<nextstrain.org/groups/group-name/> or <s3://bucket-name>")
 
     parser.add_argument(
         "local_path",
@@ -56,7 +61,13 @@ def register_parser(subparser):
 def run(opts):
     url = urlparse(opts.remote_path)
 
-    if url.scheme not in SUPPORTED_SCHEMES:
+    if not url.scheme and not url.path.startswith('nextstrain.org'):
+        warn("Error. Unsupported URL path %s" % url.path)
+        warn("")
+        warn("Only nextstrain.org paths or s3:// URLs are supported.")
+        return 1
+
+    if url.scheme and url.scheme not in SUPPORTED_SCHEMES:
         warn("Error: Unsupported remote scheme %s://" % url.scheme)
         warn("")
         warn("Supported schemes are: %s" % ", ".join(SUPPORTED_SCHEMES))
